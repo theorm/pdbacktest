@@ -8,6 +8,6 @@ setup(name='pdbacktest',
       author_email='roman@kalyakin.com',
       license='MIT',
       packages=['pdbacktest'],
-      extras_require=[
+      install_requires=[
         'backtrader'
       ])
