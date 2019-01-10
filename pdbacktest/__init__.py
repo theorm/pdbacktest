@@ -1,5 +1,7 @@
 import array, io
 import backtrader as bt
+import backtrader.plot
+import numpy as np
 
 def get_signal_from_sentiment(sentiment, boundaries=[-1, 1]):
   low_boundary, high_boundary = boundaries
@@ -23,7 +25,7 @@ def plot_cerebro(cerebro, filename=None):
   use = None
 
   plotter = bt.plot.Plot(numfigs=numfigs, iplot=iplot, start=start, end=end,
-                         width=16, height=9, dpi=300, tight=False, use=use)
+                         width=16, height=9, dpi=300, tight=False, use=use, style='line') #, style='candle'
 
   figs = []
   for stratlist in cerebro.runstrats:
@@ -41,7 +43,7 @@ def plot_cerebro(cerebro, filename=None):
     plotter.show()
     return plotter
 
-def backtest(ohlc, sentiment, signal_boundaries=[-1, 1], instruments = [], cash=500, name=None, filename=None, plot_to_buffer=False):
+def backtest(ohlc, sentiment, signal_boundaries=[-1, 1], instruments = [], cash=None, name=None, filename=None, plot_to_buffer=False):
   '''
   Arguments:
     * ohlc - a pandas DataFrame with OHLC ('Open', 'High', 'Low', 'Close')
@@ -75,7 +77,16 @@ def backtest(ohlc, sentiment, signal_boundaries=[-1, 1], instruments = [], cash=
     
     _Indicator.__name__ = '_Indicator_{}'.format(sanitised_instrument_name)
     instruments_indicators.append(_Indicator)
-      
+    
+    
+  signal = list(get_signal_from_sentiment(sentiment, signal_boundaries))
+  long_signal_indices = np.array(signal)[np.where(np.array(signal) == 1)]
+  if len(long_signal_indices) > 0:
+    first_long_index = long_signal_indices[0]
+    first_price = ohlc['Close'].values[first_long_index]
+  else:
+    first_price = None
+
   class _SignalAndSentimentIndicator(bt.Indicator):
     lines = ('signal', 'sentiment')
     plotinfo=dict(
@@ -87,8 +98,6 @@ def backtest(ohlc, sentiment, signal_boundaries=[-1, 1], instruments = [], cash=
   
     def __init__(self):
       self.lines.sentiment.array = array.array('d', sentiment)
-
-      signal = get_signal_from_sentiment(sentiment, signal_boundaries)
       self.lines.signal.array = array.array('d', signal)
       
   class _BtSignalStrategy(bt.SignalStrategy):
@@ -99,7 +108,7 @@ def backtest(ohlc, sentiment, signal_boundaries=[-1, 1], instruments = [], cash=
       sas = _SignalAndSentimentIndicator()
       self.signal_add(bt.SIGNAL_LONG, sas.signal)
       self.signal_add(bt.SIGNAL_LONGEXIT, sas.signal)
-
+        
   data = bt.feeds.PandasData(dataname=ohlc)
   
   if name is not None:
@@ -110,10 +119,15 @@ def backtest(ohlc, sentiment, signal_boundaries=[-1, 1], instruments = [], cash=
   cerebro = bt.Cerebro()
   cerebro.addstrategy(_BtSignalStrategy)
   cerebro.adddata(data)
-  cerebro.broker.setcash(cash)
-  cerebro.broker.set_slippage_perc(1, slip_open=False, slip_limit=False, slip_match=True, slip_out=True)
+  
+  if cash is not None:
+    cerebro.broker.setcash(cash)
+  elif first_price is not None:
+    cerebro.broker.setcash(first_price)
+
   # XXX: If set to 100%, the broker will reject orders where open>close from previous bar
-  cerebro.addsizer(bt.sizers.PercentSizer, percents=99.99)
+  # cerebro.addsizer(bt.sizers.PercentSizer, percents=50)
+  cerebro.addsizer(bt.sizers.SizerFix, stake=1)
 
   cerebro.addanalyzer(bt.analyzers.SharpeRatio)
   cerebro.addanalyzer(bt.analyzers.Returns)
