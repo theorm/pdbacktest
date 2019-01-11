@@ -14,7 +14,7 @@ def get_signal_from_sentiment(sentiment, boundaries=[-1, 1]):
     else:
       yield 0
 
-def plot_cerebro(cerebro, filename=None):
+def plot_cerebro(cerebro, filename=None, width_inch=16, height_inch=9):
   '''
   From `Cerebro.plot`
   '''
@@ -25,7 +25,7 @@ def plot_cerebro(cerebro, filename=None):
   use = None
 
   plotter = bt.plot.Plot(numfigs=numfigs, iplot=iplot, start=start, end=end,
-                         width=16, height=9, dpi=300, tight=False, use=use, style='line') #, style='candle'
+                         width=width_inch, height=height_inch, dpi=300, tight=False, use=use, style='line') #, style='candle'
 
   figs = []
   for stratlist in cerebro.runstrats:
@@ -43,7 +43,7 @@ def plot_cerebro(cerebro, filename=None):
     plotter.show()
     return plotter
 
-def backtest(ohlc, sentiment, signal_boundaries=[-1, 1], instruments = [], cash=None, name=None, filename=None, plot_to_buffer=False):
+def backtest(ohlc, sentiment, signal_boundaries=[-1, 1], instruments = [], cash=None, name=None, filename=None, plot_to_buffer=False, width_inch=16, height_inch=9):
   '''
   Arguments:
     * ohlc - a pandas DataFrame with OHLC ('Open', 'High', 'Low', 'Close')
@@ -143,9 +143,9 @@ def backtest(ohlc, sentiment, signal_boundaries=[-1, 1], instruments = [], cash=
 
   if plot_to_buffer:
     buf = io.BytesIO()
-    plot_result = plot_cerebro(cerebro, filename=buf)
+    plot_result = plot_cerebro(cerebro, filename=buf, width_inch=width_inch, height_inch=height_inch)
     buf.seek(0)
   else:
-    plot_result = plot_cerebro(cerebro, filename=filename)
+    plot_result = plot_cerebro(cerebro, filename=filename, width_inch=width_inch, height_inch=height_inch)
   
   return stats, plot_result
