@@ -14,7 +14,7 @@ def get_signal_from_sentiment(sentiment, boundaries=[-1, 1]):
     else:
       yield 0
 
-def plot_cerebro(cerebro, filename=None, width_inch=16, height_inch=9):
+def plot_cerebro(cerebro, filename=None, width_inch=16, height_inch=9, dpi=300):
   '''
   From `Cerebro.plot`
   '''
@@ -25,7 +25,7 @@ def plot_cerebro(cerebro, filename=None, width_inch=16, height_inch=9):
   use = None
 
   plotter = bt.plot.Plot(numfigs=numfigs, iplot=iplot, start=start, end=end,
-                         width=width_inch, height=height_inch, dpi=300, tight=False, use=use, style='line') #, style='candle'
+                         width=width_inch, height=height_inch, dpi=dpi, tight=True, use=use, style='line') #, style='candle'
 
   figs = []
   for stratlist in cerebro.runstrats:
@@ -36,14 +36,25 @@ def plot_cerebro(cerebro, filename=None, width_inch=16, height_inch=9):
       figs.append(rfig)
   
   if filename is not None:
-    plotter.savefig(figs[0][0], filename)
+    plotter.savefig(figs[0][0], filename, width=width_inch, height=height_inch, dpi=dpi, tight=True)
     plotter.mpyplot.close(figs[0][0])
     return filename
   else:
     plotter.show()
     return plotter
 
-def backtest(ohlc, sentiment, signal_boundaries=[-1, 1], instruments = [], cash=None, name=None, filename=None, plot_to_buffer=False, width_inch=16, height_inch=9):
+def backtest(
+  ohlc, 
+  sentiment, 
+  signal_boundaries=[-1, 1], 
+  instruments = [], 
+  cash=None, 
+  name=None, 
+  filename=None, 
+  plot_to_buffer=False, 
+  width_inch=16, 
+  height_inch=9,
+  dpi=300):
   '''
   Arguments:
     * ohlc - a pandas DataFrame with OHLC ('Open', 'High', 'Low', 'Close')
@@ -143,9 +154,9 @@ def backtest(ohlc, sentiment, signal_boundaries=[-1, 1], instruments = [], cash=
 
   if plot_to_buffer:
     buf = io.BytesIO()
-    plot_result = plot_cerebro(cerebro, filename=buf, width_inch=width_inch, height_inch=height_inch)
+    plot_result = plot_cerebro(cerebro, filename=buf, width_inch=width_inch, height_inch=height_inch, dpi=dpi)
     buf.seek(0)
   else:
-    plot_result = plot_cerebro(cerebro, filename=filename, width_inch=width_inch, height_inch=height_inch)
+    plot_result = plot_cerebro(cerebro, filename=filename, width_inch=width_inch, height_inch=height_inch, dpi=dpi)
   
   return stats, plot_result
